@@ -1,0 +1,355 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum DocumentStatus {
+  UPLOADING
+  UPLOADED
+  QUEUED
+  VALIDATING
+  PREPROCESSING
+  OCR_PROCESSING
+  STRUCTURE_ANALYSIS
+  QUESTION_EXTRACTION
+  ANSWER_ANALYSIS
+  VALIDATING_RESULTS
+  REVIEW_REQUIRED
+  COMPLETED
+  PARTIALLY_COMPLETED
+  FAILED
+  CANCELLED
+}
+
+enum QuestionType {
+  MCQ
+  MULTI_SELECT
+  TRUE_FALSE
+  FILL_IN_THE_BLANK
+  SHORT_ANSWER
+  LONG_ANSWER
+  UNKNOWN
+}
+
+enum QuestionStatus {
+  EXTRACTED
+  REVIEW_REQUIRED
+  PARTIAL
+  VERIFIED
+  REJECTED
+}
+
+enum AnswerStatus {
+  MATCHED
+  UNCERTAIN
+  MISSING
+}
+
+enum ReviewStatus {
+  OPEN
+  IN_REVIEW
+  RESOLVED
+  DISMISSED
+}
+
+enum ReviewSeverity {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum DocumentRole {
+  QUESTION_PAPER
+  ANSWER_KEY
+  SOLUTIONS
+  SUPPORTING
+}
+
+enum RelationshipType {
+  ANSWER_KEY_FOR
+  SOLUTION_FOR
+  RELATED
+}
+
+enum JobStatus {
+  QUEUED
+  ACTIVE
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+model User {
+  id            String          @id @default(uuid())
+  email         String          @unique
+  name          String
+  passwordHash  String
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  documents     Document[]
+  documentGroups DocumentGroup[]
+  reviewActions ReviewItem[]    @relation("ReviewActor")
+
+  @@index([createdAt])
+}
+
+model Document {
+  id                    String           @id @default(uuid())
+  ownerId               String
+  owner                 User             @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  filename              String
+  mimeType              String
+  sizeBytes             Int
+  storageKey            String
+  status                DocumentStatus   @default(UPLOADING)
+  currentStage          String?
+  progress              Int              @default(0)
+  pageCount             Int?
+  startedAt             DateTime?
+  completedAt           DateTime?
+  failureReason         String?
+  failureCode           String?
+  retryCount            Int              @default(0)
+  processingDurationMs  Int?
+  processingVersion     Int              @default(0)
+  averageConfidence     Float?
+  highConfidenceCount   Int              @default(0)
+  reviewCount           Int              @default(0)
+  questionCount         Int              @default(0)
+  detectedAsAnswerKey   Boolean          @default(false)
+  metadata              Json?
+  createdAt             DateTime         @default(now())
+  updatedAt             DateTime         @updatedAt
+
+  pages                 DocumentPage[]
+  questions             Question[]
+  jobs                  ProcessingJob[]
+  groupMemberships      DocumentGroupMember[]
+  sourceRelationships   DocumentRelationship[] @relation("RelationshipSource")
+  targetRelationships   DocumentRelationship[] @relation("RelationshipTarget")
+  warnings              ExtractionWarning[]
+  reviewItems           ReviewItem[]
+  answerSources         AnswerSource[]
+
+  @@index([ownerId])
+  @@index([status])
+  @@index([createdAt])
+  @@index([ownerId, status])
+}
+
+model DocumentPage {
+  id                 String   @id @default(uuid())
+  documentId         String
+  document           Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  pageNumber         Int
+  storageKey         String?
+  textContent        String?  @db.Text
+  hasSelectableText  Boolean  @default(false)
+  usedOcr            Boolean  @default(false)
+  ocrConfidence      Float?
+  width              Float?
+  height             Float?
+  createdAt          DateTime @default(now())
+
+  @@unique([documentId, pageNumber])
+  @@index([documentId])
+}
+
+model DocumentGroup {
+  id          String                @id @default(uuid())
+  ownerId     String
+  owner       User                  @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  name        String
+  description String?
+  createdAt   DateTime              @default(now())
+  updatedAt   DateTime              @updatedAt
+  members     DocumentGroupMember[]
+
+  @@index([ownerId])
+  @@index([createdAt])
+}
+
+model DocumentGroupMember {
+  id         String       @id @default(uuid())
+  groupId    String
+  group      DocumentGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  documentId String
+  document   Document     @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  role       DocumentRole @default(QUESTION_PAPER)
+  createdAt  DateTime     @default(now())
+
+  @@unique([groupId, documentId])
+  @@index([documentId])
+  @@index([groupId])
+}
+
+model DocumentRelationship {
+  id               String           @id @default(uuid())
+  sourceDocumentId String
+  sourceDocument   Document         @relation("RelationshipSource", fields: [sourceDocumentId], references: [id], onDelete: Cascade)
+  targetDocumentId String
+  targetDocument   Document         @relation("RelationshipTarget", fields: [targetDocumentId], references: [id], onDelete: Cascade)
+  type             RelationshipType
+  createdAt        DateTime         @default(now())
+
+  @@unique([sourceDocumentId, targetDocumentId, type])
+  @@index([sourceDocumentId])
+  @@index([targetDocumentId])
+}
+
+model ProcessingJob {
+  id           String    @id @default(uuid())
+  documentId   String
+  document     Document  @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  queueName    String
+  bullJobId    String?
+  stage        String
+  status       JobStatus @default(QUEUED)
+  attempt      Int       @default(0)
+  startedAt    DateTime?
+  completedAt  DateTime?
+  durationMs   Int?
+  error        String?   @db.Text
+  metadata     Json?
+  createdAt    DateTime  @default(now())
+
+  @@index([documentId])
+  @@index([status])
+  @@index([documentId, stage])
+}
+
+model Question {
+  id                       String         @id @default(uuid())
+  documentId               String
+  document                 Document       @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  processingVersion        Int
+  sortOrder                Int
+  questionNumber           String
+  questionText             String         @db.Text
+  questionType             QuestionType   @default(UNKNOWN)
+  status                   QuestionStatus @default(EXTRACTED)
+  overallConfidence        Float
+  textConfidence           Float
+  optionsConfidence        Float
+  answerConfidence         Float
+  sourceMappingConfidence  Float
+  boundaryConfidence       Float
+  numberingConfidence      Float
+  startPage                Int
+  endPage                  Int
+  sourcePages              Int[]
+  sourceRegions            Json
+  warnings                 Json?
+  createdAt                DateTime       @default(now())
+  updatedAt                DateTime       @updatedAt
+
+  options                  QuestionOption[]
+  assets                   QuestionAsset[]
+  answer                   Answer?
+  reviewItems              ReviewItem[]
+  extractionWarnings       ExtractionWarning[]
+
+  @@index([documentId])
+  @@index([documentId, processingVersion])
+  @@index([questionNumber])
+  @@index([status])
+  @@index([questionType])
+  @@index([overallConfidence])
+  @@index([createdAt])
+}
+
+model QuestionOption {
+  id         String   @id @default(uuid())
+  questionId String
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  label      String
+  text       String   @db.Text
+  confidence Float
+  sortOrder  Int
+
+  @@index([questionId])
+}
+
+model QuestionAsset {
+  id         String   @id @default(uuid())
+  questionId String
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  type       String
+  storageKey String?
+  page       Int
+  region     Json?
+  caption    String?
+
+  @@index([questionId])
+}
+
+model Answer {
+  id         String       @id @default(uuid())
+  questionId String       @unique
+  question   Question     @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  value      String?
+  confidence Float?
+  status     AnswerStatus @default(MISSING)
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+  sources    AnswerSource[]
+}
+
+model AnswerSource {
+  id          String    @id @default(uuid())
+  answerId    String
+  answer      Answer    @relation(fields: [answerId], references: [id], onDelete: Cascade)
+  documentId  String
+  document    Document  @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  pages       Int[]
+  rawText     String?   @db.Text
+  format      String?
+
+  @@index([answerId])
+  @@index([documentId])
+}
+
+model ExtractionWarning {
+  id         String    @id @default(uuid())
+  documentId String
+  document   Document  @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  questionId String?
+  question   Question? @relation(fields: [questionId], references: [id], onDelete: SetNull)
+  code       String
+  message    String
+  severity   ReviewSeverity @default(MEDIUM)
+  createdAt  DateTime  @default(now())
+
+  @@index([documentId])
+  @@index([questionId])
+  @@index([code])
+}
+
+model ReviewItem {
+  id           String         @id @default(uuid())
+  documentId   String
+  document     Document       @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  questionId   String
+  question     Question       @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  severity     ReviewSeverity
+  reason       String
+  code         String
+  confidence   Float
+  status       ReviewStatus   @default(OPEN)
+  resolution   String?        @db.Text
+  actorId      String?
+  actor        User?          @relation("ReviewActor", fields: [actorId], references: [id], onDelete: SetNull)
+  resolvedAt   DateTime?
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  @@index([documentId])
+  @@index([questionId])
+  @@index([status])
+  @@index([severity])
+  @@index([createdAt])
+}

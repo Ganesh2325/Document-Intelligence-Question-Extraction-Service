@@ -1,0 +1,48 @@
+{
+  "name": "folio",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Folio — document intelligence workspace for examination question extraction",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "concurrently -n api,worker,web -c cyan,magenta,green \"npm run dev -w @folio/api\" \"npm run dev -w @folio/worker\" \"npm run dev -w @folio/web\"",
+    "dev:api": "npm run dev -w @folio/api",
+    "dev:worker": "npm run dev -w @folio/worker",
+    "dev:web": "npm run dev -w @folio/web",
+    "build": "npm run build -w @folio/shared && npm run build -w @folio/types && npm run build -w @folio/config && npm run build -w @folio/api && npm run build -w @folio/worker && npm run build -w @folio/web",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "test:e2e": "npm run test:e2e -w @folio/web",
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate deploy",
+    "db:migrate:dev": "prisma migrate dev",
+    "db:seed": "tsx prisma/seed.ts",
+    "db:reset": "prisma migrate reset --force",
+    "samples": "tsx scripts/generate-samples.ts",
+    "postinstall": "prisma generate"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.16.2",
+    "bcryptjs": "^3.0.2"
+  },
+  "devDependencies": {
+    "@types/node": "^22.18.1",
+    "concurrently": "^9.2.1",
+    "pdf-lib": "^1.17.1",
+    "prisma": "^6.16.2",
+    "sharp": "^0.34.4",
+    "tsx": "^4.20.5",
+    "typescript": "^5.9.2",
+    "vitest": "^3.2.4"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}
