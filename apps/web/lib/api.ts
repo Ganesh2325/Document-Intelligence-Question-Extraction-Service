@@ -65,31 +65,35 @@ function toApiError(error: unknown): ApiError {
   return new ApiError("REQUEST_FAILED", message, 0);
 }
 
-async function fetchWithRetry(url: string, init: RequestInit): Promise<Response> {
-  const method = (init.method ?? "GET").toUpperCase();
-  const attempts = method === "GET" || method === "HEAD" ? 2 : 1;
-  let lastError: unknown;
-  for (let attempt = 1; attempt <= attempts; attempt += 1) {
-    try {
-      return await fetch(url, init);
-    } catch (error) {
-      lastError = error;
-      if (isAbortError(error) || attempt === attempts) throw toApiError(error);
-      await new Promise((resolve) => setTimeout(resolve, 250 * attempt));
-    }
+const getCache = new Map<string, { expires: number; data: unknown }>();
+const GET_TTL_MS = 2_000;
+
+function cacheKey(path: string, token: string | null) {
+  return `${token ?? ""}:${path}`;
+}
+
+export function clearApiCache() {
+  getCache.clear();
+}
+
+async function fetchOnce(url: string, init: RequestInit): Promise<Response> {
+  try {
+    return await fetch(url, init);
+  } catch (error) {
+    throw toApiError(error);
   }
-  throw toApiError(lastError);
 }
 
 function withTimeout(init: RequestInit): RequestInit {
   if (init.signal) return init;
   if (typeof AbortSignal !== "undefined" && typeof AbortSignal.timeout === "function") {
-    return { ...init, signal: AbortSignal.timeout(30_000) };
+    return { ...init, signal: AbortSignal.timeout(20_000) };
   }
   return init;
 }
 
 export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
+  const method = (init.method ?? "GET").toUpperCase();
   const token = getToken();
   const headers = new Headers(init.headers);
   if (token) headers.set("Authorization", `Bearer ${token}`);
@@ -97,12 +101,14 @@ export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
     headers.set("Content-Type", "application/json");
   }
 
-  let response: Response;
-  try {
-    response = await fetchWithRetry(`${getApiBase()}${path}`, withTimeout({ ...init, headers }));
-  } catch (error) {
-    throw toApiError(error);
+  if (method === "GET" && !init.signal) {
+    const hit = getCache.get(cacheKey(path, token));
+    if (hit && hit.expires > Date.now()) return hit.data as T;
   }
+
+  const response = await fetchOnce(`${getApiBase()}${path}`, withTimeout({ ...init, headers }));
+
+  if (method !== "GET") clearApiCache();
 
   if (response.status === 204) return undefined as T;
   const data = await response.json().catch(() => ({}));
@@ -110,9 +116,13 @@ export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
     const err = (data as { error?: { code?: string; message?: string } }).error ?? {};
     if (response.status === 401 && typeof window !== "undefined" && !path.startsWith("/api/v1/auth/")) {
       setToken(null);
+      clearApiCache();
       window.location.href = "/login";
     }
     throw new ApiError(err.code ?? "REQUEST_FAILED", err.message ?? "Request failed.", response.status);
+  }
+  if (method === "GET") {
+    getCache.set(cacheKey(path, token), { expires: Date.now() + GET_TTL_MS, data });
   }
   return data as T;
 }

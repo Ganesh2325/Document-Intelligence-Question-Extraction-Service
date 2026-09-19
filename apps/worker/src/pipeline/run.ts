@@ -359,7 +359,7 @@ async function persistResults(input: {
           documentId: input.documentId,
           processingVersion: input.processingVersion,
           sortOrder: index,
-          questionNumber: extracted.questionNumber,
+          questionNumber: String(index + 1),
           questionText: extracted.questionText,
           questionType: extracted.questionType,
           status: extracted.incomplete ? "PARTIAL" : needsReview ? "REVIEW_REQUIRED" : "EXTRACTED",

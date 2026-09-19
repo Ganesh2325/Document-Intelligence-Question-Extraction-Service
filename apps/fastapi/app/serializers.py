@@ -84,7 +84,7 @@ def serialize_question(question: Any, document_filename: str | None = None) -> d
     payload = {
         "id": question.id,
         "documentId": question.documentId,
-        "questionNumber": question.questionNumber,
+        "questionNumber": str((getattr(question, "sortOrder", 0) or 0) + 1),
         "questionText": question.questionText,
         "questionType": enum_value(question.questionType),
         "status": enum_value(question.status),
@@ -158,7 +158,7 @@ def serialize_review(item: Any) -> dict[str, Any]:
         if question is None
         else {
             "id": question.id,
-            "questionNumber": question.questionNumber,
+            "questionNumber": str((getattr(question, "sortOrder", 0) or 0) + 1),
             "questionText": question.questionText,
             "overallConfidence": question.overallConfidence,
             "startPage": question.startPage,

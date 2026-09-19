@@ -24,6 +24,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     if (!loading && !user) router.replace("/login");
   }, [loading, user, router]);
 
+  useEffect(() => {
+    if (!user) return;
+    for (const item of NAV) {
+      void router.prefetch(item.href);
+    }
+  }, [user, router]);
+
   if (loading || !user) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-paper-100" aria-busy="true">
@@ -54,6 +61,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 <Link
                   key={item.href}
                   href={item.href}
+                  prefetch
                   className={`rounded-md px-3 py-2 text-sm transition ${
                     active ? "bg-white/10 text-white" : "text-ink-300 hover:bg-white/5 hover:text-white"
                   }`}

@@ -368,6 +368,10 @@ export function extractQuestionsFromPages(pages: PageContent[]): ExtractionResul
     documentWarnings.push("No question boundaries were detected.");
   }
 
+  questions.forEach((question, index) => {
+    question.questionNumber = String(index + 1);
+  });
+
   void fullText;
   void answerKeyStartedAt;
 

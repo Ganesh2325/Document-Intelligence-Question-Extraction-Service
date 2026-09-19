@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { ApiError, api, authHeaders } from "@/lib/api";
+import { onVisibleInterval } from "@/lib/poll";
 import { Card, ConfidenceMeter, EmptyState, ErrorState, Skeleton, StatusBadge, formatDate, formatDuration } from "@/components/ui";
 import { useToast } from "@/components/toast";
 
@@ -90,8 +91,7 @@ export default function DocumentDetailPage() {
     if (!data) return;
     const active = !["COMPLETED", "FAILED", "CANCELLED", "REVIEW_REQUIRED", "PARTIALLY_COMPLETED"].includes(data.document.status);
     if (!active) return;
-    const timer = setInterval(() => void load({ silent: true }), 2000);
-    return () => clearInterval(timer);
+    return onVisibleInterval(() => void load({ silent: true }), 5000);
   }, [data, load]);
 
   if (error) return <ErrorState title="Document unavailable" body={error} onRetry={() => void load()} />;

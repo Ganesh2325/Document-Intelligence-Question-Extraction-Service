@@ -37,7 +37,7 @@ export default function QuestionsPage() {
   }, [band, type, q, page]);
 
   const load = useCallback(() => {
-    setLoading(true);
+    if (items.length === 0) setLoading(true);
     setError(null);
     return api<{ items: QuestionRow[]; total: number }>(`/api/v1/questions?${query}`)
       .then((res) => {
@@ -46,7 +46,7 @@ export default function QuestionsPage() {
       })
       .catch((err: Error) => setError(err.message))
       .finally(() => setLoading(false));
-  }, [query]);
+  }, [query, items.length]);
 
   useEffect(() => {
     const handle = setTimeout(() => {
@@ -56,16 +56,6 @@ export default function QuestionsPage() {
   }, [load]);
 
   const totalPages = Math.max(1, Math.ceil(total / limit));
-  const ordered = useMemo(
-    () =>
-      [...items].sort((a, b) => {
-        const left = Number.parseInt(a.questionNumber, 10);
-        const right = Number.parseInt(b.questionNumber, 10);
-        if (Number.isFinite(left) && Number.isFinite(right) && left !== right) return left - right;
-        return a.questionNumber.localeCompare(b.questionNumber, undefined, { numeric: true, sensitivity: "base" });
-      }),
-    [items],
-  );
 
   return (
     <div className="space-y-6">
@@ -131,7 +121,7 @@ export default function QuestionsPage() {
         <EmptyState title="No matching questions" body="Extract a document first, or widen the filters." />
       ) : (
         <div className="space-y-3">
-          {ordered.map((item) => (
+          {items.map((item) => (
             <Card
               key={item.id}
               className="grid grid-cols-1 items-start gap-x-6 gap-y-3 sm:grid-cols-[4.5rem_minmax(0,1fr)] lg:grid-cols-[4.5rem_minmax(0,1fr)_9.25rem_11rem] lg:items-center"
@@ -145,6 +135,7 @@ export default function QuestionsPage() {
               <div className="min-w-0">
                 <p className="line-clamp-2 text-sm leading-6">{item.questionText}</p>
                 <p className="mt-1 truncate text-xs text-ink-500">
+                  {item.documentFilename ? `${item.documentFilename} · ` : ""}
                   {item.questionType.replaceAll("_", " ")} · pages {item.source.pages.join(", ")} · {item.answer?.value ?? item.answer?.status ?? "unanswered"}
                 </p>
               </div>

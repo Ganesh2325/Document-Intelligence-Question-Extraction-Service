@@ -11,6 +11,12 @@ const nextConfig: NextConfig = {
   outputFileTracingRoot: path.join(__dirname, "../.."),
   reactStrictMode: true,
   typedRoutes: false,
+  experimental: {
+    staleTimes: {
+      dynamic: 60,
+      static: 300,
+    },
+  },
   async rewrites() {
     return [
       { source: "/api/v1/:path*", destination: `${apiBackend}/api/v1/:path*` },

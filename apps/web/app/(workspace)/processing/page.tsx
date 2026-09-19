@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
+import { onVisibleInterval } from "@/lib/poll";
 import { Card, EmptyState, ErrorState, Skeleton, StatusBadge } from "@/components/ui";
 
 interface DocumentRow {
@@ -39,9 +40,8 @@ export default function ProcessingPage() {
   }, []);
 
   useEffect(() => {
-    const interval = active.length > 0 ? 2000 : 8000;
-    const timer = setInterval(() => void load({ silent: true }), interval);
-    return () => clearInterval(timer);
+    const interval = active.length > 0 ? 5000 : 15000;
+    return onVisibleInterval(() => void load({ silent: true }), interval);
   }, [active.length]);
 
   return (

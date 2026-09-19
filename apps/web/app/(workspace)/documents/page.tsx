@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api, getApiBase, authHeaders } from "@/lib/api";
+import { onVisibleInterval } from "@/lib/poll";
 import { Card, EmptyState, ErrorState, Skeleton, StatusBadge, formatDate } from "@/components/ui";
 import { useToast } from "@/components/toast";
 
@@ -56,12 +57,9 @@ export default function DocumentsPage() {
   }, [load]);
 
   useEffect(() => {
-    const timer = setInterval(() => {
-      if (items.some((d) => !["COMPLETED", "FAILED", "CANCELLED", "REVIEW_REQUIRED", "PARTIALLY_COMPLETED"].includes(d.status))) {
-        void load({ silent: true });
-      }
-    }, 2500);
-    return () => clearInterval(timer);
+    const active = items.some((d) => !["COMPLETED", "FAILED", "CANCELLED", "REVIEW_REQUIRED", "PARTIALLY_COMPLETED"].includes(d.status));
+    if (!active) return;
+    return onVisibleInterval(() => void load({ silent: true }), 8000);
   }, [items, load]);
 
   async function uploadFiles(files: FileList | File[]) {

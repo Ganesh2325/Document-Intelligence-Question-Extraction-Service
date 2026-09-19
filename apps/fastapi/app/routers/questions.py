@@ -66,27 +66,29 @@ async def search_questions(
     if pageNumber is not None:
         filters.append(Question.sourcePages.contains([pageNumber]))
 
-    query = select(Question).join(Document).outerjoin(Answer).where(*filters)
+    query = (
+        select(Question)
+        .join(
+            Document,
+            (Question.documentId == Document.id) & (Question.processingVersion == Document.processingVersion),
+        )
+        .outerjoin(Answer, Answer.questionId == Question.id)
+        .where(*filters)
+    )
     total = await db.scalar(select(func.count()).select_from(query.subquery())) or 0
     result = await db.execute(
-        query.options(
-            selectinload(Question.options),
-            selectinload(Question.answer).selectinload(Answer.sources),
-            selectinload(Question.reviewItems),
-            selectinload(Question.document),
-        )
-        .order_by(Document.createdAt.desc(), Question.sortOrder.asc(), Question.questionNumber.asc())
+        query.options(selectinload(Question.answer), selectinload(Question.document))
+        .order_by(Document.createdAt.asc(), Question.sortOrder.asc())
         .offset(skip)
         .limit(resolved_limit)
     )
     items = result.scalars().unique().all()
-    current = [item for item in items if item.processingVersion == item.document.processingVersion]
-    return paginated(
-        [serialize_question(item, document_filename=item.document.filename) for item in current],
-        total,
-        resolved_page,
-        resolved_limit,
-    )
+    payload = []
+    for index, item in enumerate(items):
+        row = serialize_question(item, document_filename=item.document.filename)
+        row["questionNumber"] = str(skip + index + 1)
+        payload.append(row)
+    return paginated(payload, total, resolved_page, resolved_limit)
 
 
 @router.get("/api/v1/questions/{question_id}", summary="Get question inspector payload")
