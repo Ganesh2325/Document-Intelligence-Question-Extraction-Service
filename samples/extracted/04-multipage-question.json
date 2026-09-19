@@ -1,0 +1,53 @@
+{
+  "documentId": "sample-04-multipage-question",
+  "filename": "04-multipage-question.pdf",
+  "schema": "folio.question.v1",
+  "notes": "Question 14 begins on page 1 and continues onto page 2. The system stores one question with source_pages [1, 2].",
+  "questions": [
+    {
+      "question": "Which of the following is a noble gas?",
+      "question_number": "14",
+      "question_type": "MCQ",
+      "options": [
+        { "label": "A", "text": "Oxygen" },
+        { "label": "B", "text": "Nitrogen" },
+        { "label": "C", "text": "Helium" },
+        { "label": "D", "text": "Chlorine" }
+      ],
+      "answer": null,
+      "answer_status": "MISSING",
+      "source_pages": [1, 2],
+      "start_page": 1,
+      "end_page": 2,
+      "confidence": 0.87,
+      "status": "EXTRACTED"
+    },
+    {
+      "question": "Define isotope.",
+      "question_number": "15",
+      "question_type": "SHORT_ANSWER",
+      "options": [],
+      "answer": null,
+      "answer_status": "MISSING",
+      "source_pages": [2],
+      "confidence": 0.83,
+      "status": "EXTRACTED"
+    },
+    {
+      "question": "Which of the following are metals? Select all that apply.",
+      "question_number": "16",
+      "question_type": "MULTI_SELECT",
+      "options": [
+        { "label": "A", "text": "Iron" },
+        { "label": "B", "text": "Sulphur" },
+        { "label": "C", "text": "Copper" },
+        { "label": "D", "text": "Phosphorus" }
+      ],
+      "answer": null,
+      "answer_status": "MISSING",
+      "source_pages": [2],
+      "confidence": 0.86,
+      "status": "EXTRACTED"
+    }
+  ]
+}

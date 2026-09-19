@@ -1,0 +1,75 @@
+{
+  "documentId": "sample-01-clean-digital",
+  "filename": "01-clean-digital.pdf",
+  "schema": "folio.question.v1",
+  "questions": [
+    {
+      "question": "Which of the following is a vector quantity?",
+      "question_number": "1",
+      "question_type": "MCQ",
+      "options": [
+        { "label": "A", "text": "Mass" },
+        { "label": "B", "text": "Speed" },
+        { "label": "C", "text": "Velocity" },
+        { "label": "D", "text": "Time" }
+      ],
+      "answer": "C",
+      "answer_status": "MISSING",
+      "source_pages": [1],
+      "confidence": 0.91,
+      "status": "EXTRACTED"
+    },
+    {
+      "question": "The SI unit of force is the",
+      "question_number": "2",
+      "question_type": "MCQ",
+      "options": [
+        { "label": "A", "text": "Joule" },
+        { "label": "B", "text": "Newton" },
+        { "label": "C", "text": "Pascal" },
+        { "label": "D", "text": "Watt" }
+      ],
+      "answer": null,
+      "answer_status": "MISSING",
+      "source_pages": [1],
+      "confidence": 0.9,
+      "status": "EXTRACTED"
+    },
+    {
+      "question": "True or false: Water boils at 100C at 1 atm.",
+      "question_number": "3",
+      "question_type": "TRUE_FALSE",
+      "options": [
+        { "label": "A", "text": "True" },
+        { "label": "B", "text": "False" }
+      ],
+      "answer": null,
+      "answer_status": "MISSING",
+      "source_pages": [1],
+      "confidence": 0.88,
+      "status": "EXTRACTED"
+    },
+    {
+      "question": "Explain why the sky appears blue.",
+      "question_number": "4",
+      "question_type": "LONG_ANSWER",
+      "options": [],
+      "answer": null,
+      "answer_status": "MISSING",
+      "source_pages": [1],
+      "confidence": 0.84,
+      "status": "EXTRACTED"
+    },
+    {
+      "question": "Fill in the blank: The chemical symbol for gold is _____.",
+      "question_number": "5",
+      "question_type": "FILL_IN_THE_BLANK",
+      "options": [],
+      "answer": null,
+      "answer_status": "MISSING",
+      "source_pages": [1],
+      "confidence": 0.86,
+      "status": "EXTRACTED"
+    }
+  ]
+}

@@ -3,9 +3,9 @@
 ## Authentication
 
 - `POST /api/v1/auth/register` and `/login` issue a JWT signed with `JWT_SECRET`
-- Passwords are hashed with bcryptjs (cost 12 in register, 10 in seed)
+- Passwords are hashed with bcrypt (cost 12 in register, 10 in seed)
 - `/api/v1/auth/me` and every data route require a valid bearer token
-- Auth routes are rate-limited
+- Auth routes are rate-limited via Redis
 
 ## Authorization
 

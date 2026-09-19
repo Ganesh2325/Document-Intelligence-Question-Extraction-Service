@@ -1,0 +1,28 @@
+{
+  "filename": "03-low-quality-scan.pdf",
+  "processing": "ocr",
+  "notes": "Blurry scan. Extraction may be partial and should surface review items rather than invented answers.",
+  "questions": [
+    {
+      "question": "Which gas is used in bulbs?",
+      "question_number": "1",
+      "question_type": "MCQ",
+      "options": [
+        { "label": "A", "text": "Oxygen" },
+        { "label": "B", "text": "Argon" },
+        { "label": "C", "text": "Nitrogen" },
+        { "label": "D", "text": "Hydrogen" }
+      ],
+      "answer": null,
+      "source_pages": [1],
+      "confidence": 0.58,
+      "status": "REVIEW_REQUIRED",
+      "warnings": [
+        {
+          "code": "LOW_OCR_CONFIDENCE",
+          "message": "Page 1 OCR confidence is below the review threshold."
+        }
+      ]
+    }
+  ]
+}

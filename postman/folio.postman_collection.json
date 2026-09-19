@@ -222,6 +222,14 @@
           }
         },
         {
+          "name": "Extraction warnings",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/api/v1/documents/{{documentId}}/warnings"
+          }
+        },
+        {
           "name": "Review queue",
           "request": {
             "method": "GET",

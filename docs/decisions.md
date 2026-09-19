@@ -27,3 +27,8 @@ Questions have options, answers, assets, warnings, and review items. Users own d
 ## ADR-007 — Heuristic extraction as the default "AI"
 
 The assignment forbids fake AI. A local, testable parser that actually finds `Question 14` across a page break is more honest than a hardcoded JSON blob labelled "GPT". OpenAI is available behind a flag when a key exists, and it still cannot invent answers.
+
+## ADR-008 — FastAPI as the HTTP API
+
+The problem statement requires FastAPI for the API layer. Folio keeps the Next.js workspace and the Node extraction worker, and exposes the same `/api/v1` contracts from Python so the UI does not change. PostgreSQL remains the source of truth; SQLAlchemy talks to the Prisma-managed schema. Redis/BullMQ remains the async boundary between HTTP and OCR/extraction.
+

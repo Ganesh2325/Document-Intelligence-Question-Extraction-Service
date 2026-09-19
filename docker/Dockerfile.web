@@ -6,6 +6,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends openssl ca-cert
 FROM base AS deps
 COPY package.json package-lock.json* ./
 COPY apps/api/package.json apps/api/
+COPY apps/fastapi/package.json apps/fastapi/
 COPY apps/worker/package.json apps/worker/
 COPY apps/web/package.json apps/web/
 COPY packages/shared/package.json packages/shared/

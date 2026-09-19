@@ -5,7 +5,7 @@ Folio is a modular document-intelligence system. The browser never talks to Post
 ```mermaid
 flowchart TD
   user[Recruiter / operator] --> web[Next.js workspace]
-  web --> api[Fastify API]
+  web --> api[FastAPI]
   api --> pg[(PostgreSQL)]
   api --> redis[(Redis)]
   api --> minio[(MinIO)]
@@ -27,7 +27,7 @@ Next.js App Router, TypeScript, Tailwind. Client components are used where polli
 
 ## API
 
-Fastify owns authentication, validation, authorization, uploads, job enqueueing, and read models. Requests get a `requestId`. Errors use:
+FastAPI owns authentication, validation, authorization, uploads, job enqueueing, and read models. Requests get a `requestId`. Errors use:
 
 ```json
 { "error": { "code": "DOCUMENT_NOT_FOUND", "message": "Document was not found.", "requestId": "..." } }
@@ -39,7 +39,7 @@ PostgreSQL stores users, documents, pages, jobs, questions, options, answers, wa
 
 ## Redis and BullMQ
 
-Redis is the job backbone, not a cache of extracted questions. BullMQ gives retries, backoff, concurrency, and isolated failures. A malformed document cannot crash the worker process; the job fails and the document is marked `FAILED`.
+Redis is the job backbone, not a cache of extracted questions. FastAPI enqueues work onto `folio:document-jobs` (and a BullMQ-compatible wait list). The Node worker consumes those jobs concurrently. A malformed document cannot crash the worker process; the job fails and the document is marked `FAILED`.
 
 ## Worker
 

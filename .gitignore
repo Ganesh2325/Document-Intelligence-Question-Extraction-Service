@@ -24,5 +24,9 @@ playwright-report/
 test-results/
 blob-report/
 *.tsbuildinfo
-.vscode/
-.idea/
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+apps/fastapi/.venv/

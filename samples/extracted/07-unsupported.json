@@ -1,0 +1,9 @@
+{
+  "filename": "07-unsupported.txt",
+  "accepted": false,
+  "http_status": 400,
+  "error": {
+    "code": "UNSUPPORTED_TYPE",
+    "message": "Only PDF, JPG, JPEG, and PNG files are accepted."
+  }
+}

@@ -8,8 +8,9 @@
     "packages/*"
   ],
   "scripts": {
-    "dev": "concurrently -n api,worker,web -c cyan,magenta,green \"npm run dev -w @folio/api\" \"npm run dev -w @folio/worker\" \"npm run dev -w @folio/web\"",
-    "dev:api": "npm run dev -w @folio/api",
+    "dev": "concurrently -n api,worker,web -c cyan,magenta,green \"npm run dev -w @folio/fastapi\" \"npm run dev -w @folio/worker\" \"npm run dev -w @folio/web\"",
+    "dev:api": "npm run dev -w @folio/fastapi",
+    "dev:api:legacy": "npm run dev -w @folio/api",
     "dev:worker": "npm run dev -w @folio/worker",
     "dev:web": "npm run dev -w @folio/web",
     "build": "npm run build -w @folio/shared && npm run build -w @folio/types && npm run build -w @folio/config && npm run build -w @folio/api && npm run build -w @folio/worker && npm run build -w @folio/web",
