@@ -24,7 +24,7 @@
             "url": "{{baseUrl}}/api/v1/auth/register",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Recruiter\",\n  \"email\": \"recruiter@folio.dev\",\n  \"password\": \"RecruiterDemo123!\"\n}"
+              "raw": "{\n  \"name\": \"Your Name\",\n  \"email\": \"you@example.com\",\n  \"password\": \"your-password\"\n}"
             }
           }
         },
@@ -48,7 +48,7 @@
             "url": "{{baseUrl}}/api/v1/auth/login",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"recruiter@folio.dev\",\n  \"password\": \"RecruiterDemo123!\"\n}"
+              "raw": "{\n  \"email\": \"you@example.com\",\n  \"password\": \"your-password\"\n}"
             }
           }
         },

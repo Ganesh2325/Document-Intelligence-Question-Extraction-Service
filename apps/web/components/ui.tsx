@@ -48,6 +48,60 @@ export function EmptyState({ title, body, action }: { title: string; body: strin
   );
 }
 
+export function ErrorState({
+  title,
+  body,
+  onRetry,
+}: {
+  title: string;
+  body: string;
+  onRetry?: () => void;
+}) {
+  return (
+    <div role="alert" className="rounded-xl border border-rust-500/30 bg-white px-6 py-12 text-center">
+      <p className="font-display text-2xl text-ink-900">{title}</p>
+      <p className="mx-auto mt-2 max-w-md text-sm text-ink-500">{body}</p>
+      {onRetry ? (
+        <button type="button" onClick={onRetry} className="mt-6 rounded-md bg-pine-700 px-4 py-2 text-sm text-white">
+          Retry
+        </button>
+      ) : null}
+    </div>
+  );
+}
+
+export function Button({
+  children,
+  onClick,
+  type = "button",
+  variant = "primary",
+  disabled,
+  className = "",
+}: {
+  children: React.ReactNode;
+  onClick?: () => void;
+  type?: "button" | "submit";
+  variant?: "primary" | "secondary" | "ghost";
+  disabled?: boolean;
+  className?: string;
+}) {
+  const styles = {
+    primary: "bg-pine-700 text-white",
+    secondary: "border border-paper-200 bg-white",
+    ghost: "text-ink-500",
+  }[variant];
+  return (
+    <button
+      type={type}
+      onClick={onClick}
+      disabled={disabled}
+      className={`rounded-md px-3 py-2 text-sm disabled:opacity-50 ${styles} ${className}`}
+    >
+      {children}
+    </button>
+  );
+}
+
 export function Skeleton({ className }: { className?: string }) {
   return <div className={`skeleton rounded ${className ?? "h-4 w-full"}`} />;
 }

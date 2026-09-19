@@ -34,7 +34,7 @@ Next.js  →  FastAPI  →  PostgreSQL
      MinIO  ·  PDF.js  ·  Tesseract  ·  heuristic extractor
 ```
 
-See [docs/architecture.md](docs/architecture.md) and [docs/decisions.md](docs/decisions.md).
+See [docs/architecture.md](docs/architecture.md), [docs/decisions.md](docs/decisions.md), [docs/performance.md](docs/performance.md), [docs/reliability.md](docs/reliability.md), and [docs/efficiency.md](docs/efficiency.md).
 
 ## Technology stack
 
@@ -66,22 +66,11 @@ docker compose up --build
 Then:
 
 1. Open http://localhost:3000
-2. Sign in with `recruiter@folio.dev` / `RecruiterDemo123!`
-3. Upload files from `samples/`
+2. Recruiter credentials are shown on the left and pre-filled — click **Continue**
+3. Upload your own PDF or image
 4. Inspect Swagger at http://localhost:3001/docs
 
-The API runs migrations on boot. Seed the demo user after the API is healthy:
-
-```bash
-docker compose exec api npx tsx prisma/seed.ts
-```
-
-Or from the host, with `DATABASE_URL` pointed at localhost:
-
-```bash
-npx prisma migrate deploy
-npm run db:seed
-```
+The API runs migrations on boot. No demo user or sample documents are seeded.
 
 ## Local development (apps separately)
 
@@ -100,8 +89,6 @@ cp .env.example .env
 npm install
 python -m pip install -r apps/fastapi/requirements.txt
 npx prisma migrate dev --name init
-npm run db:seed
-npm run samples
 npm run dev
 ```
 
@@ -177,7 +164,7 @@ Documented in [docs/pipeline.md](docs/pipeline.md). Long work never runs inside 
 
 See [docs/security.md](docs/security.md). Highlights:
 
-- bcryptjs password hashing and JWT access tokens
+- bcrypt password hashing and JWT access tokens
 - every document/question route checks `ownerId`
 - uploads validated by extension, size, and magic bytes
 - objects stored under generated keys, never the original filename
@@ -186,6 +173,18 @@ See [docs/security.md](docs/security.md). Highlights:
 ## Scalability
 
 Workers scale horizontally. `WORKER_CONCURRENCY` controls in-process parallelism. Storage is S3-compatible so MinIO can be replaced with AWS S3 without rewriting the domain model. The API is stateless.
+
+## Performance
+
+See [docs/performance.md](docs/performance.md). Extraction is asynchronous. Lists are paginated. Search is debounced. The inspector loads only the source pages for the selected question.
+
+## Reliability
+
+See [docs/reliability.md](docs/reliability.md). Jobs are versioned and idempotent. Failures are isolated per document. Health/readiness distinguish liveness from dependency readiness.
+
+## Efficiency
+
+See [docs/efficiency.md](docs/efficiency.md). OCR is used only when needed. The default extractor is heuristic, not a paid LLM.
 
 ## Trade-offs
 

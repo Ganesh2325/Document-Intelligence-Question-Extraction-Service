@@ -3,8 +3,8 @@
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
-import { api, apiUrl, authHeaders } from "@/lib/api";
-import { Card, ConfidenceMeter, EmptyState, StatusBadge } from "@/components/ui";
+import { api, getApiBase, authHeaders } from "@/lib/api";
+import { Card, ConfidenceMeter, EmptyState, ErrorState, StatusBadge } from "@/components/ui";
 
 interface QuestionPayload {
   question: {
@@ -29,19 +29,62 @@ export default function QuestionInspectorPage() {
   const [data, setData] = useState<QuestionPayload | null>(null);
   const [page, setPage] = useState<number | null>(null);
   const [neighbors, setNeighbors] = useState<{ previous: { id: string } | null; next: { id: string } | null } | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    api<QuestionPayload>(`/api/v1/questions/${params.id}`).then((res) => {
-      setData(res);
-      setPage(res.question.startPage);
-    });
-    api<{ previous: { id: string } | null; next: { id: string } | null }>(`/api/v1/questions/${params.id}/neighbors`).then(setNeighbors);
+    const id = Array.isArray(params.id) ? params.id[0] : params.id;
+    if (!id) return;
+    const controller = new AbortController();
+    setError(null);
+    setData(null);
+    Promise.all([
+      api<QuestionPayload>(`/api/v1/questions/${id}`, { signal: controller.signal }),
+      api<{ previous: { id: string } | null; next: { id: string } | null }>(`/api/v1/questions/${id}/neighbors`, {
+        signal: controller.signal,
+      }),
+    ])
+      .then(([res, nav]) => {
+        setData(res);
+        setPage(res.question.startPage);
+        setNeighbors(nav);
+      })
+      .catch((err: Error) => {
+        if (err.name === "AbortError" || err.message === "Request was cancelled.") return;
+        setError(err.message);
+      });
+    return () => controller.abort();
   }, [params.id]);
 
-  if (!data) return <p className="text-ink-500">Loading inspector…</p>;
+  if (error) {
+    return (
+      <ErrorState
+        title="Question could not be opened"
+        body={error}
+        onRetry={() => {
+          setError(null);
+          setData(null);
+          api<QuestionPayload>(`/api/v1/questions/${params.id}`)
+            .then((res) => {
+              setData(res);
+              setPage(res.question.startPage);
+            })
+            .catch((err: Error) => setError(err.message));
+        }}
+      />
+    );
+  }
+
+  if (!data) {
+    return (
+      <div className="grid gap-6 lg:grid-cols-2" aria-busy="true">
+        <div className="skeleton h-80 rounded-xl" />
+        <div className="skeleton h-80 rounded-xl" />
+      </div>
+    );
+  }
   const q = data.question;
   const currentPage = page ?? q.startPage;
-  const imageUrl = `${apiUrl}/api/v1/documents/${q.documentId}/pages/${currentPage}/image`;
+  const imageUrl = `${getApiBase()}/api/v1/documents/${q.documentId}/pages/${currentPage}/image`;
 
   return (
     <div className="space-y-6">

@@ -75,7 +75,14 @@ class Settings(BaseSettings):
 
     @property
     def cors_origins(self) -> list[str]:
-        return [item.strip() for item in self.CORS_ORIGIN.split(",") if item.strip()]
+        configured = [item.strip() for item in self.CORS_ORIGIN.split(",") if item.strip()]
+        local = {
+            "http://localhost:3000",
+            "http://127.0.0.1:3000",
+            "http://localhost:3001",
+            "http://127.0.0.1:3001",
+        }
+        return list(dict.fromkeys([*configured, *local]))
 
     @property
     def is_production(self) -> bool:

@@ -13,7 +13,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from .config import get_settings
 from .errors import AppError
 from .queue import close_queue
-from .routers import auth, dashboard, documents, groups, health, questions, review
+from .routers import auth, dashboard, documents, groups, health, metrics, questions, review
 from .storage import ensure_bucket
 
 logger = logging.getLogger("folio.api")
@@ -54,13 +54,16 @@ def create_app() -> FastAPI:
         swagger_ui_parameters={"docExpansion": "list", "deepLinking": True},
     )
 
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=settings.cors_origins,
-        allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
-    )
+    cors: dict = {
+        "allow_origins": settings.cors_origins,
+        "allow_credentials": True,
+        "allow_methods": ["*"],
+        "allow_headers": ["*"],
+        "expose_headers": ["x-request-id"],
+    }
+    if not settings.is_production:
+        cors["allow_origin_regex"] = r"https?://(localhost|127\.0\.0\.1)(:\d+)?$"
+    app.add_middleware(CORSMiddleware, **cors)
 
     @app.middleware("http")
     async def request_context(request: Request, call_next):
@@ -116,6 +119,7 @@ def create_app() -> FastAPI:
     app.include_router(review.router)
     app.include_router(groups.router)
     app.include_router(dashboard.router)
+    app.include_router(metrics.router)
 
     @app.get("/", include_in_schema=False)
     async def root():

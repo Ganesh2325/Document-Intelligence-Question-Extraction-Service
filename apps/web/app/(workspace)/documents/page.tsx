@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { api, apiUrl, authHeaders } from "@/lib/api";
-import { Card, EmptyState, StatusBadge, formatDate } from "@/components/ui";
+import { api, getApiBase, authHeaders } from "@/lib/api";
+import { Card, EmptyState, ErrorState, Skeleton, StatusBadge, formatDate } from "@/components/ui";
 import { useToast } from "@/components/toast";
 
 interface DocumentRow {
@@ -32,23 +32,33 @@ export default function DocumentsPage() {
   const [q, setQ] = useState("");
   const [drag, setDrag] = useState(false);
   const [uploading, setUploading] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const load = useCallback(async () => {
-    const data = await api<Paginated<DocumentRow>>(`/api/v1/documents?limit=50&q=${encodeURIComponent(q)}`);
-    setItems(data.items);
+  const load = useCallback(async (opts?: { silent?: boolean }) => {
+    try {
+      if (!opts?.silent) setError(null);
+      const data = await api<Paginated<DocumentRow>>(`/api/v1/documents?limit=50&q=${encodeURIComponent(q)}`);
+      setItems(data.items);
+      if (!opts?.silent) setError(null);
+    } catch (err) {
+      if (opts?.silent) return;
+      const message = err instanceof Error ? err.message : "Documents could not be loaded.";
+      setError(message);
+    } finally {
+      setLoading(false);
+    }
   }, [q]);
 
   useEffect(() => {
-    const handle = setTimeout(() => {
-      load().catch((err) => push(err.message, "error"));
-    }, 250);
+    const handle = setTimeout(() => void load(), 250);
     return () => clearTimeout(handle);
-  }, [load, push]);
+  }, [load]);
 
   useEffect(() => {
     const timer = setInterval(() => {
       if (items.some((d) => !["COMPLETED", "FAILED", "CANCELLED", "REVIEW_REQUIRED", "PARTIALLY_COMPLETED"].includes(d.status))) {
-        load().catch(() => undefined);
+        void load({ silent: true });
       }
     }, 2500);
     return () => clearInterval(timer);
@@ -60,10 +70,12 @@ export default function DocumentsPage() {
       try {
         const form = new FormData();
         form.append("file", file);
-        const created = await fetch(`${apiUrl}/api/v1/documents`, {
+        const created = await fetch(`${getApiBase()}/api/v1/documents`, {
           method: "POST",
           headers: authHeaders(),
           body: form,
+        }).catch(() => {
+          throw new Error("The API could not be reached. Confirm the Folio API is running, then retry.");
         });
         const json = await created.json();
         if (!created.ok) throw new Error(json.error?.message ?? "Upload failed.");
@@ -85,9 +97,11 @@ export default function DocumentsPage() {
           <p className="mt-2 text-ink-500">PDF, JPG, and PNG. Processing starts as soon as the file is stored.</p>
         </div>
         <input
+          id="document-search"
           value={q}
           onChange={(e) => setQ(e.target.value)}
           placeholder="Search filenames"
+          aria-label="Search filenames"
           className="w-64 rounded-md border border-paper-200 bg-white px-3 py-2 text-sm"
         />
       </header>
@@ -108,6 +122,9 @@ export default function DocumentsPage() {
       >
         <p className="font-display text-2xl">Drop examination papers here</p>
         <p className="mt-2 text-sm text-ink-500">or choose files from disk. Max 25 MB. PDF / JPG / PNG only.</p>
+        <p className="sr-only" aria-live="polite">
+          {uploading ? `Uploading ${uploading}` : ""}
+        </p>
         <button
           type="button"
           onClick={() => inputRef.current?.click()}
@@ -124,8 +141,16 @@ export default function DocumentsPage() {
           onChange={(e) => e.target.files && void uploadFiles(e.target.files)}
         />
       </div>
-      {items.length === 0 ? (
-        <EmptyState title="No documents yet" body="Start with a clean paper, a scanned PDF, or the sample set in /samples." />
+      {error ? (
+        <ErrorState title="Documents could not be loaded" body={error} onRetry={() => void load()} />
+      ) : loading ? (
+        <div className="space-y-3" aria-busy="true">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <Skeleton key={i} className="h-20" />
+          ))}
+        </div>
+      ) : items.length === 0 ? (
+        <EmptyState title="No documents yet" body="Upload a PDF, JPG, or PNG examination paper to begin extraction." />
       ) : (
         <div className="grid gap-3">
           {items.map((doc) => (

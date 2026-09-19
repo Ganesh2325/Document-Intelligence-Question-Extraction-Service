@@ -4,6 +4,8 @@ from datetime import datetime, timezone
 from enum import Enum
 from typing import Any
 
+from sqlalchemy import inspect as sa_inspect
+
 
 def iso(value: datetime | None) -> str | None:
     if value is None:
@@ -63,12 +65,21 @@ def serialize_job(job: Any) -> dict[str, Any]:
     }
 
 
+def _loaded(obj: Any, name: str, default: Any):
+    if obj is None:
+        return default
+    if name in sa_inspect(obj).unloaded:
+        return default
+    value = getattr(obj, name)
+    return default if value is None else value
+
+
 def serialize_question(question: Any, document_filename: str | None = None) -> dict[str, Any]:
-    options = list(getattr(question, "options", None) or [])
+    options = list(_loaded(question, "options", []) or [])
     options.sort(key=lambda item: item.sortOrder)
-    answer = getattr(question, "answer", None)
-    sources = list(getattr(answer, "sources", None) or []) if answer else []
-    review_items = list(getattr(question, "reviewItems", None) or [])
+    answer = _loaded(question, "answer", None)
+    sources = list(_loaded(answer, "sources", []) or []) if answer else []
+    review_items = list(_loaded(question, "reviewItems", []) or [])
     needs_review = any(enum_value(item.status) in {"OPEN", "IN_REVIEW"} for item in review_items)
     payload = {
         "id": question.id,
@@ -130,7 +141,7 @@ def serialize_question(question: Any, document_filename: str | None = None) -> d
 
 
 def serialize_review(item: Any) -> dict[str, Any]:
-    question = getattr(item, "question", None)
+    question = _loaded(item, "question", None)
     return {
         "id": item.id,
         "documentId": item.documentId,

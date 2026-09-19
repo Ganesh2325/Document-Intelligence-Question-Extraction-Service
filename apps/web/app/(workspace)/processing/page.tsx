@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
-import { Card, EmptyState, StatusBadge } from "@/components/ui";
+import { Card, EmptyState, ErrorState, Skeleton, StatusBadge } from "@/components/ui";
 
 interface DocumentRow {
   id: string;
@@ -16,19 +16,33 @@ interface DocumentRow {
 
 export default function ProcessingPage() {
   const [items, setItems] = useState<DocumentRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  async function load() {
-    const data = await api<{ items: DocumentRow[] }>("/api/v1/documents?limit=50");
-    setItems(data.items.filter((d) => !["UPLOADED"].includes(d.status)));
+  async function load(opts?: { silent?: boolean }) {
+    try {
+      const data = await api<{ items: DocumentRow[] }>("/api/v1/documents?limit=50");
+      setItems(data.items.filter((d) => !["UPLOADED"].includes(d.status)));
+      setError(null);
+    } catch (err) {
+      if (opts?.silent) return;
+      setError(err instanceof Error ? err.message : "Processing status could not be loaded.");
+    } finally {
+      setLoading(false);
+    }
   }
 
+  const active = items.filter((d) => !["COMPLETED", "FAILED", "CANCELLED", "REVIEW_REQUIRED", "PARTIALLY_COMPLETED"].includes(d.status));
+
   useEffect(() => {
-    load().catch(() => undefined);
-    const timer = setInterval(() => load().catch(() => undefined), 2000);
-    return () => clearInterval(timer);
+    void load();
   }, []);
 
-  const active = items.filter((d) => !["COMPLETED", "FAILED", "CANCELLED", "REVIEW_REQUIRED", "PARTIALLY_COMPLETED"].includes(d.status));
+  useEffect(() => {
+    const interval = active.length > 0 ? 2000 : 8000;
+    const timer = setInterval(() => void load({ silent: true }), interval);
+    return () => clearInterval(timer);
+  }, [active.length]);
 
   return (
     <div className="space-y-6">
@@ -36,7 +50,15 @@ export default function ProcessingPage() {
         <h1 className="font-display text-4xl">Processing</h1>
         <p className="mt-2 text-ink-500">Jobs run in the worker. You can leave this page; status is recovered from the API.</p>
       </header>
-      {items.length === 0 ? (
+      {error ? (
+        <ErrorState title="Processing status unavailable" body={error} onRetry={() => void load()} />
+      ) : loading ? (
+        <div className="space-y-3" aria-busy="true">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <Skeleton key={i} className="h-28" />
+          ))}
+        </div>
+      ) : items.length === 0 ? (
         <EmptyState title="No processing history" body="Upload a document to enqueue the extraction pipeline." />
       ) : (
         <div className="space-y-3">

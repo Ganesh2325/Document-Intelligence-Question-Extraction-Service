@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
-import { Card, ConfidenceMeter, EmptyState, Skeleton, StatusBadge, formatDate } from "@/components/ui";
+import { Card, ConfidenceMeter, EmptyState, ErrorState, Skeleton, StatusBadge, formatDate } from "@/components/ui";
 
 interface Stats {
   documentsProcessed: number;
@@ -30,7 +30,17 @@ export default function DashboardPage() {
 
   if (error) {
     return (
-      <EmptyState title="Dashboard unavailable" body={error} />
+      <ErrorState
+        title="Dashboard unavailable"
+        body={error}
+        onRetry={() => {
+          setError(null);
+          setStats(null);
+          api<Stats>("/api/v1/dashboard/stats")
+            .then(setStats)
+            .catch((err) => setError(err.message));
+        }}
+      />
     );
   }
 

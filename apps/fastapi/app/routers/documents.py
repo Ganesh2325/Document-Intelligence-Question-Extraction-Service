@@ -327,7 +327,11 @@ async def list_document_questions(
     result = await db.execute(
         select(Question)
         .where(*filters)
-        .options(selectinload(Question.options), selectinload(Question.answer), selectinload(Question.reviewItems))
+        .options(
+            selectinload(Question.options),
+            selectinload(Question.answer).selectinload(Answer.sources),
+            selectinload(Question.reviewItems),
+        )
         .order_by(Question.sortOrder.asc())
         .offset(skip)
         .limit(resolved_limit)
@@ -348,7 +352,11 @@ async def export_questions(
         await db.execute(
             select(Question)
             .where(Question.documentId == document.id, Question.processingVersion == document.processingVersion)
-            .options(selectinload(Question.options), selectinload(Question.answer), selectinload(Question.reviewItems))
+            .options(
+                selectinload(Question.options),
+                selectinload(Question.answer).selectinload(Answer.sources),
+                selectinload(Question.reviewItems),
+            )
             .order_by(Question.sortOrder.asc())
         )
     ).scalars().unique().all()

@@ -16,7 +16,11 @@ export default function GroupDetailPage() {
   } | null>(null);
 
   useEffect(() => {
-    api<{ group: NonNullable<typeof group> }>(`/api/v1/document-groups/${params.id}`).then((res) => setGroup(res.group));
+    const id = Array.isArray(params.id) ? params.id[0] : params.id;
+    if (!id) return;
+    api<{ group: NonNullable<typeof group> }>(`/api/v1/document-groups/${id}`)
+      .then((res) => setGroup(res.group))
+      .catch(() => setGroup(null));
   }, [params.id]);
 
   if (!group) return <p>Loading group…</p>;

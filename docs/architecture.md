@@ -41,6 +41,28 @@ PostgreSQL stores users, documents, pages, jobs, questions, options, answers, wa
 
 Redis is the job backbone, not a cache of extracted questions. FastAPI enqueues work onto `folio:document-jobs` (and a BullMQ-compatible wait list). The Node worker consumes those jobs concurrently. A malformed document cannot crash the worker process; the job fails and the document is marked `FAILED`.
 
+```mermaid
+sequenceDiagram
+  participant UI as Next.js
+  participant API as FastAPI
+  participant PG as PostgreSQL
+  participant Q as Redis
+  participant W as Worker
+  participant S as MinIO
+  UI->>API: POST /documents
+  API->>S: put original
+  API->>PG: document UPLOADED
+  API-->>UI: 201 immediately
+  UI->>API: POST /process
+  API->>Q: enqueue versioned job
+  API->>PG: QUEUED
+  API-->>UI: jobId
+  W->>Q: consume
+  W->>S: read original
+  W->>PG: stages + questions txn
+  UI->>API: GET /status (poll)
+```
+
 ## Worker
 
 The worker runs a staged pipeline (validation → preprocessing → OCR → structure → questions → answers → validation → persist). Each stage updates `status`, `currentStage`, `progress`, and a `ProcessingJob` row.

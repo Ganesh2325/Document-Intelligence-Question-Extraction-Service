@@ -1,1 +1,0 @@
-This is an unsupported file used to demonstrate upload rejection.

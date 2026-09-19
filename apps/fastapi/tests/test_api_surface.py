@@ -19,6 +19,12 @@ def test_protected_route_requires_auth():
     assert response.json()["error"]["code"] == "UNAUTHORIZED"
 
 
+def test_metrics_requires_auth():
+    client = TestClient(app)
+    response = client.get("/api/v1/metrics")
+    assert response.status_code == 401
+
+
 def test_openapi_and_docs_are_published():
     client = TestClient(app)
     docs = client.get("/docs")
@@ -39,5 +45,6 @@ def test_openapi_and_docs_are_published():
         "/api/v1/documents/{document_id}/warnings",
         "/api/v1/review-items",
         "/api/v1/document-groups",
+        "/api/v1/metrics",
     ):
         assert required in paths

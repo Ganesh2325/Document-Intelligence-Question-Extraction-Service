@@ -26,8 +26,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   if (loading || !user) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-paper-100 text-ink-500">
-        Loading workspace…
+      <div className="flex min-h-screen items-center justify-center bg-paper-100" aria-busy="true">
+        <div className="w-full max-w-sm space-y-3 px-6">
+          <div className="skeleton h-8 w-40 rounded" />
+          <div className="skeleton h-24 w-full rounded-xl" />
+          <p className="text-center text-sm text-ink-500">Restoring workspace…</p>
+        </div>
       </div>
     );
   }
@@ -59,20 +63,18 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               );
             })}
           </nav>
-          <div className="border-t border-white/10 p-4">
-            <p className="truncate text-sm">{user.name}</p>
+          <div className="mt-auto border-t border-white/10 p-4 text-center">
+            <LogoutButton onClick={logout} />
+            <p className="mt-3 truncate text-sm">{user.name}</p>
             <p className="truncate text-xs text-ink-300">{user.email}</p>
-            <button type="button" onClick={logout} className="mt-3 text-xs text-ink-300 underline-offset-2 hover:text-white hover:underline">
-              Sign out
-            </button>
           </div>
         </aside>
         <div className="flex min-w-0 flex-1 flex-col">
-          <header className="flex items-center justify-between border-b border-paper-200 bg-paper-50/80 px-4 py-3 backdrop-blur md:hidden">
+          <header className="flex items-center justify-between gap-3 border-b border-paper-200 bg-paper-50/80 px-4 py-3 backdrop-blur md:hidden">
             <p className="font-display text-lg">Folio</p>
             <select
               aria-label="Navigate"
-              className="rounded border border-paper-200 bg-white px-2 py-1 text-sm"
+              className="min-w-0 flex-1 rounded border border-paper-200 bg-white px-2 py-1 text-sm"
               value={NAV.find((n) => pathname.startsWith(n.href))?.href ?? "/dashboard"}
               onChange={(e) => router.push(e.target.value)}
             >
@@ -82,6 +84,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 </option>
               ))}
             </select>
+            <LogoutButton onClick={logout} compact />
           </header>
           <main id="main" className="mx-auto w-full max-w-7xl flex-1 px-4 py-8 sm:px-8">
             {children}
@@ -89,5 +92,28 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </div>
       </div>
     </div>
+  );
+}
+
+function LogoutButton({ onClick, compact = false }: { onClick: () => void; compact?: boolean }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`logout-btn inline-flex items-center justify-center gap-2 rounded-full bg-rust-600 font-medium text-white ${
+        compact ? "h-9 px-3 text-xs" : "mx-auto h-10 w-[11rem] px-4 text-sm"
+      }`}
+    >
+      <svg viewBox="0 0 20 20" fill="none" aria-hidden="true" className="h-4 w-4">
+        <path
+          d="M8 4H5.5A1.5 1.5 0 0 0 4 5.5v9A1.5 1.5 0 0 0 5.5 16H8"
+          stroke="currentColor"
+          strokeWidth="1.6"
+          strokeLinecap="round"
+        />
+        <path d="M8 10h8m0 0-2.4-2.4M16 10l-2.4 2.4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+      Logout
+    </button>
   );
 }

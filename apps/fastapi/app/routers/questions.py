@@ -71,11 +71,11 @@ async def search_questions(
     result = await db.execute(
         query.options(
             selectinload(Question.options),
-            selectinload(Question.answer),
+            selectinload(Question.answer).selectinload(Answer.sources),
             selectinload(Question.reviewItems),
             selectinload(Question.document),
         )
-        .order_by(Question.createdAt.desc(), Question.sortOrder.asc())
+        .order_by(Document.createdAt.desc(), Question.sortOrder.asc(), Question.questionNumber.asc())
         .offset(skip)
         .limit(resolved_limit)
     )

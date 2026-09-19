@@ -1,9 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { api } from "@/lib/api";
-import { Card, EmptyState, StatusBadge } from "@/components/ui";
+import { Card, EmptyState, ErrorState, Skeleton, StatusBadge } from "@/components/ui";
 import { useToast } from "@/components/toast";
 
 interface ReviewRow {
@@ -26,28 +26,44 @@ export default function ReviewPage() {
   const [tab, setTab] = useState("OPEN");
   const [items, setItems] = useState<ReviewRow[]>([]);
   const [counts, setCounts] = useState({ OPEN: 0, HIGH: 0, RESOLVED: 0 });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  async function load() {
-    const [open, high, resolved] = await Promise.all([
-      api<{ items: ReviewRow[]; total: number }>(`/api/v1/review-items?status=OPEN&limit=50`),
-      api<{ items: ReviewRow[]; total: number }>(`/api/v1/review-items?severity=HIGH&status=OPEN&limit=50`),
-      api<{ items: ReviewRow[]; total: number }>(`/api/v1/review-items?status=RESOLVED&limit=50`),
-    ]);
-    setCounts({ OPEN: open.total, HIGH: high.total, RESOLVED: resolved.total });
-    if (tab === "HIGH") setItems(high.items);
-    else if (tab === "RESOLVED") setItems(resolved.items);
-    else setItems(open.items);
-  }
-
-  useEffect(() => {
-    load().catch(() => undefined);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const [open, high, resolved] = await Promise.all([
+        api<{ items: ReviewRow[]; total: number }>(`/api/v1/review-items?status=OPEN&limit=50`),
+        api<{ items: ReviewRow[]; total: number }>(`/api/v1/review-items?severity=HIGH&status=OPEN&limit=50`),
+        api<{ items: ReviewRow[]; total: number }>(`/api/v1/review-items?status=RESOLVED&limit=50`),
+      ]);
+      setCounts({ OPEN: open.total, HIGH: high.total, RESOLVED: resolved.total });
+      if (tab === "HIGH") setItems(high.items);
+      else if (tab === "RESOLVED") setItems(resolved.items);
+      else setItems(open.items);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Review queue could not be loaded.");
+    } finally {
+      setLoading(false);
+    }
   }, [tab]);
 
+  useEffect(() => {
+    void load();
+  }, [load]);
+
   async function act(id: string, action: "approve" | "dismiss" | "resolve") {
-    await api(`/api/v1/review-items/${id}/${action}`, { method: "POST", body: JSON.stringify({}) });
-    push(`Review item ${action}d`, "success");
-    await load();
+    const previous = items;
+    setItems((current) => current.filter((item) => item.id !== id));
+    try {
+      await api(`/api/v1/review-items/${id}/${action}`, { method: "POST", body: JSON.stringify({}) });
+      push(`Review item ${action}d`, "success");
+      await load();
+    } catch (err) {
+      setItems(previous);
+      push(err instanceof Error ? err.message : "Review action failed.", "error");
+    }
   }
 
   return (
@@ -56,7 +72,7 @@ export default function ReviewPage() {
         <h1 className="font-display text-4xl">Review</h1>
         <p className="mt-2 text-ink-500">Uncertainty is surfaced here instead of being hidden behind a confident UI.</p>
       </header>
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-2" role="tablist" aria-label="Review queues">
         {[
           ["OPEN", `Needs review (${counts.OPEN})`],
           ["HIGH", `High severity (${counts.HIGH})`],
@@ -64,6 +80,9 @@ export default function ReviewPage() {
         ].map(([value, label]) => (
           <button
             key={value}
+            type="button"
+            role="tab"
+            aria-selected={tab === value}
             onClick={() => setTab(value)}
             className={`rounded-full px-3 py-1.5 text-sm ${tab === value ? "bg-ink-900 text-white" : "border border-paper-200 bg-white"}`}
           >
@@ -71,8 +90,19 @@ export default function ReviewPage() {
           </button>
         ))}
       </div>
-      {items.length === 0 ? (
-        <EmptyState title="Queue is clear" body="When extraction is uncertain, review items will land here." />
+      {error ? (
+        <ErrorState title="Review queue unavailable" body={error} onRetry={() => void load()} />
+      ) : loading ? (
+        <div className="space-y-3" aria-busy="true">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <Skeleton key={i} className="h-32" />
+          ))}
+        </div>
+      ) : items.length === 0 ? (
+        <EmptyState
+          title="Queue is clear"
+          body="When extraction is uncertain, review items will land here. You can keep working in Documents while jobs run."
+        />
       ) : (
         <div className="space-y-3">
           {items.map((item) => (
@@ -96,7 +126,8 @@ export default function ReviewPage() {
                   <p className="mt-2 line-clamp-2 text-sm text-ink-500">{item.question?.questionText}</p>
                   <p className="mt-2 text-xs text-ink-500">
                     Source pages {item.question?.startPage}
-                    {item.question && item.question.endPage !== item.question.startPage ? `–${item.question.endPage}` : ""} · confidence {Math.round(item.confidence * 100)}%
+                    {item.question && item.question.endPage !== item.question.startPage ? `–${item.question.endPage}` : ""} ·
+                    confidence {Math.round(item.confidence * 100)}%
                   </p>
                 </div>
                 {item.status === "OPEN" ? (

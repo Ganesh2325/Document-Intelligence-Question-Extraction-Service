@@ -19,12 +19,16 @@ export default function GroupsPage() {
   const [docs, setDocs] = useState<Array<{ id: string; filename: string }>>([]);
 
   async function load() {
-    const [g, d] = await Promise.all([
-      api<{ items: Group[] }>("/api/v1/document-groups"),
-      api<{ items: Array<{ id: string; filename: string }> }>("/api/v1/documents?limit=100"),
-    ]);
-    setGroups(g.items);
-    setDocs(d.items);
+    try {
+      const [g, d] = await Promise.all([
+        api<{ items: Group[] }>("/api/v1/document-groups"),
+        api<{ items: Array<{ id: string; filename: string }> }>("/api/v1/documents?limit=100"),
+      ]);
+      setGroups(g.items);
+      setDocs(d.items);
+    } catch {
+      /* keep last successful groups list */
+    }
   }
 
   useEffect(() => {
@@ -34,24 +38,32 @@ export default function GroupsPage() {
   async function createGroup(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
-    await api("/api/v1/document-groups", {
-      method: "POST",
-      body: JSON.stringify({ name: form.get("name"), description: form.get("description") }),
-    });
-    push("Group created", "success");
-    (event.target as HTMLFormElement).reset();
-    await load();
+    try {
+      await api("/api/v1/document-groups", {
+        method: "POST",
+        body: JSON.stringify({ name: form.get("name"), description: form.get("description") }),
+      });
+      push("Group created", "success");
+      (event.target as HTMLFormElement).reset();
+      await load();
+    } catch (err) {
+      push(err instanceof Error ? err.message : "Group could not be created.", "error");
+    }
   }
 
   async function addDoc(groupId: string, event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
-    await api(`/api/v1/document-groups/${groupId}/documents`, {
-      method: "POST",
-      body: JSON.stringify({ documentId: form.get("documentId"), role: form.get("role") }),
-    });
-    push("Document linked", "success");
-    await load();
+    try {
+      await api(`/api/v1/document-groups/${groupId}/documents`, {
+        method: "POST",
+        body: JSON.stringify({ documentId: form.get("documentId"), role: form.get("role") }),
+      });
+      push("Document linked", "success");
+      await load();
+    } catch (err) {
+      push(err instanceof Error ? err.message : "Document could not be linked.", "error");
+    }
   }
 
   return (
@@ -62,7 +74,7 @@ export default function GroupsPage() {
       </header>
       <Card>
         <form onSubmit={createGroup} className="grid gap-3 md:grid-cols-[1fr_1fr_auto]">
-          <input required name="name" placeholder="Exam Set A" className="rounded-md border border-paper-200 px-3 py-2 text-sm" />
+          <input required name="name" placeholder="Exam set name" className="rounded-md border border-paper-200 px-3 py-2 text-sm" />
           <input name="description" placeholder="Description" className="rounded-md border border-paper-200 px-3 py-2 text-sm" />
           <button className="rounded-md bg-pine-700 px-4 py-2 text-sm text-white">Create group</button>
         </form>

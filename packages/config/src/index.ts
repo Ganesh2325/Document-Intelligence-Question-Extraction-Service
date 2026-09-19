@@ -32,9 +32,9 @@ const envSchema = z.object({
   SEED_DEMO_USER: z
     .string()
     .optional()
-    .transform((v) => v !== "false"),
-  SEED_EMAIL: z.string().email().default("recruiter@folio.dev"),
-  SEED_PASSWORD: z.string().min(8).default("RecruiterDemo123!"),
+    .transform((v) => v === "true"),
+  SEED_EMAIL: z.union([z.string().email(), z.literal("")]).optional().default(""),
+  SEED_PASSWORD: z.string().optional().default(""),
 });
 
 export type AppEnv = z.infer<typeof envSchema>;

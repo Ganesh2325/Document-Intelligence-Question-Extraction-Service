@@ -1,11 +1,12 @@
 "use client";
 
 import { Card } from "@/components/ui";
-import { apiUrl } from "@/lib/api";
+import { getDirectApiUrl } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 
 export default function SettingsPage() {
   const { user } = useAuth();
+  const apiOrigin = getDirectApiUrl();
   return (
     <div className="space-y-6">
       <header>
@@ -22,14 +23,14 @@ export default function SettingsPage() {
         <ul className="mt-3 space-y-2 text-sm">
           <li>
             Swagger UI:{" "}
-            <a className="text-pine-700 underline" href={`${apiUrl}/docs`} target="_blank" rel="noreferrer">
-              {apiUrl}/docs
+            <a className="text-pine-700 underline" href={`${apiOrigin}/docs`} target="_blank" rel="noreferrer">
+              {apiOrigin}/docs
             </a>
           </li>
           <li>
             OpenAPI JSON:{" "}
-            <a className="text-pine-700 underline" href={`${apiUrl}/docs/json`} target="_blank" rel="noreferrer">
-              {apiUrl}/docs/json
+            <a className="text-pine-700 underline" href={`${apiOrigin}/openapi.json`} target="_blank" rel="noreferrer">
+              {apiOrigin}/openapi.json
             </a>
           </li>
           <li>Postman collection: <code>postman/folio.postman_collection.json</code></li>

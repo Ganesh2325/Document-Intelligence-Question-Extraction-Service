@@ -30,5 +30,9 @@ The assignment forbids fake AI. A local, testable parser that actually finds `Qu
 
 ## ADR-008 — FastAPI as the HTTP API
 
-The problem statement requires FastAPI for the API layer. Folio keeps the Next.js workspace and the Node extraction worker, and exposes the same `/api/v1` contracts from Python so the UI does not change. PostgreSQL remains the source of truth; SQLAlchemy talks to the Prisma-managed schema. Redis/BullMQ remains the async boundary between HTTP and OCR/extraction.
+The problem statement requires FastAPI for the API layer. Folio keeps the Next.js workspace and the Node extraction worker, and exposes the same `/api/v1` contracts from Python so the UI does not change. PostgreSQL remains the source of truth; SQLAlchemy talks to the Prisma-managed schema. Redis remains the async boundary between HTTP and OCR/extraction.
+
+## ADR-009 — FastAPI over Fastify for the HTTP layer
+
+A later quality prompt preferred Fastify. The assignment specification remains the functional source of truth, so FastAPI stays the API. Fastify in `apps/api` is not used by `npm run dev`. The Node worker still owns OCR and extraction.
 
